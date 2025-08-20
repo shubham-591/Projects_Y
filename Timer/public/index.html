@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer</title>
+</head>
+
+<body>
+
+    <h1>Timer</h1>
+    <p>Player 1: <span id="p1">40</span> sec</p>
+    <p>Player 2: <span id="p2">40</span> sec</p>
+
+    <button onclick="gameStart()">Start Game</button>
+    <button onclick="endTurn()">End Turn</button>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const player1 = document.getElementById("p1");
+        const player2 = document.getElementById("p2")
+
+        socket.on("updateTimer", ({ player1Timer, player2Timer }) => {
+            // console.log("Update");
+            player1.innerText = player1Timer;
+            player2.innerText = player2Timer;
+        });
+
+        socket.on("gameOver", ({ winner }) => {
+            alert(`Game Over! Winner: Player ${winner}`);
+            player1.innerText = 10;
+            player2.innerText = 10;
+            // gameStart();
+        });
+
+        function gameStart() {
+            socket.emit("startGame");
+        }
+
+        function endTurn() {
+            socket.emit("stop");
+        }
+    </script>
+
+</body>
+
+</html>
