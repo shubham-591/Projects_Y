@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor moving</title>
+    <style>
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .cursor-pointer {
+            background-color: rgb(143, 143, 186);
+            height: 100vh;
+            /* border: 2px solid black; */
+            /* border-radius: 20%; */
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div id="mouse-moving" class="cursor-pointer">
+
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const movement = document.getElementById('mouse-moving');
+
+        let allCursors = {};
+
+        document.addEventListener('mousemove', (e) => {
+            const xCoord = e.clientX;
+            const yCoord = e.clientY;
+            console.log(xCoord, yCoord);
+
+            socket.emit('pointer-move', { x: xCoord, y: yCoord });
+        });
+
+        socket.on('update-position', ({ x, y, id }) => {
+            if (!allCursors[id]) {
+                const pointer = document.createElement("div");
+                pointer.style.width = "10px";
+                pointer.style.height = "10px";
+                pointer.style.borderRadius = "10%";
+                pointer.style.background = "green";
+                pointer.style.position = "absolute";
+                movement.append(pointer);
+                // pointer.style.left = x + "px";
+                // pointer.style.top = y + "px";
+                allCursors[id] = pointer;
+                // allCursors[id].style.left = x + "px";
+                // allCursors[id].style.top = y + "px";
+            }
+            allCursors[id].style.left = x + "px";
+            allCursors[id].style.top = y + "px";
+        });
+
+
+    </script>
+</body>
+
+</html>
