@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dhagla baji</title>
+</head>
+
+<body>
+    <!-- <h2>Dhagla Baji Game</h2>
+
+    <div>
+        <input type="text" id="playerName" placeholder="Enter your name" />
+        <button id="joinBtn">Join Game</button>
+    </div>
+
+    <div id="game" style="display:none;">
+        <p id="status">Waiting...</p>
+        <button id="playBtn">Play Card</button>
+        <pre id="log"></pre>
+    </div> -->
+
+    <h2>Dhagla Baji Game</h2>
+
+    <div id="lobby">
+        <input type="text" id="playerName" placeholder="Enter your name" />
+        <button id="joinBtn">Join Game</button>
+    </div>
+
+    <div id="statusArea" style="display:none;">
+        <!-- <p id="statusMessage"></p> -->
+    </div>
+
+    <div id="game" style="display:none;">
+        <p id="status">Waiting...</p>
+        <button id="playBtn">Play Card</button>
+
+        <div class="pile">
+            <p>Pile: <span id="pile"></span></p>
+        </div>
+
+        <div class="counts">
+            <p id="countsText"></p>
+        </div>
+
+        <div>
+            <p id="roundWinner"></p>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const joinBtn = document.getElementById("joinBtn");
+        const playBtn = document.getElementById("playBtn");
+        const playerNameInput = document.getElementById("playerName");
+        const status = document.getElementById("status");
+        const pile = document.getElementById("pile");
+        // const counts = document.getElementById("counts");
+        const countsText = document.getElementById("countsText");
+        const roundWinner = document.getElementById("roundWinner");
+        const gameDiv = document.getElementById("game");
+        const statusArea = document.getElementById('statusArea');
+        // const statusMessage = document.getElementById('statusMessage');
+
+        let myId;
+        let myTurn;
+
+        joinBtn.addEventListener('click', () => {
+            const playerName = playerNameInput.value;
+            if (!playerName) {
+                return alert("Enter your name");
+            }
+            socket.emit('joinGame', playerName);
+            playerNameInput.value = "";
+        });
+
+        playBtn.addEventListener('click', () => {
+            if (!myTurn) {
+                alert("Not your turn");
+                return;
+            }
+            socket.emit('play-card');
+        });
+
+        socket.on("player-joined", (data) => {
+            statusArea.style.display = "block";
+            // statusMessage.innerText = `${data.playerName} has joined the game.`;
+            // statusMessage.style.fontWeight = "bold";
+            // statusArea.appendChild(msg); // make sure you have a statusArea div
+            const msg = document.createElement("p");
+            msg.innerText = `${data.playerName} has joined the game.`;
+            msg.style.fontWeight = "bold";
+            statusArea.appendChild(msg);
+        });
+
+        // When game starts
+        socket.on("gameStart", (data) => {
+            gameDiv.style.display = "block";
+            status.innerText = `Game started! First turn: ${data.firstTurnName}`;
+            myId = socket.id;
+            myTurn = (data.firstTurnId === socket.id);
+            updateCounts(data.counts);
+        });
+
+        // Round result updates
+        socket.on("round-result", (data) => {
+            if (data.winnerOfRound) {
+                roundWinner.innerText = `Round won by: ${data.winnerOfRound}`;
+
+                if (data.lastMatchedCard) {
+                    roundWinner.innerText += ` (Matched: ${data.lastMatchedCard.cardNumber}${data.lastMatchedCard.suit})`;
+                }
+
+                pile.innerText = `(Pile collected)`;
+            } else {
+                roundWinner.innerText = "";
+                pile.innerText = data.pile.map(c => `${c.cardNumber}${c.suit}`).join(", ");
+            }
+
+            updateCounts(data.count);
+            status.innerText = myTurn ? "Your turn!" : "Opponent's turn";
+
+            // flip turn
+            myTurn = !myTurn;
+        });
+
+        // Game over
+        socket.on("game-over", (data) => {
+            status.innerText = `Game Over! Winner: ${data.winner}`;
+            playBtn.disabled = true;
+        });
+
+        function updateCounts(countObj) {  
+            let text = Object.entries(countObj)
+                .map(([name, c]) => `${name}: ${c} cards`)
+                .join(" | ");
+            countsText.innerText = text; 
+        }
+
+    </script>
+</body>
+
+</html>
