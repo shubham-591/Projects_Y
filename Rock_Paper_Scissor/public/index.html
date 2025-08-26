@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissor</title>
+</head>
+
+<body>
+    <button id="btn">Start Game</button>
+    <div id="status"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const button = document.getElementById('btn');
+        const container = document.getElementById('status');
+
+        // let flag = true;
+
+        button.addEventListener('click', () => {
+            button.textContent = 'Make Move';
+            // button.disabled = true;
+            socket.emit('make-move');
+        });
+
+        socket.on('button-disabled', () => {
+            button.disabled = true;
+        });
+
+        socket.on('button-enabled', () => {
+            button.disabled = false;
+        });
+
+        socket.on('update-status', (users) => {
+            // if(button.disabled) {
+            //     button.disabled = false;
+            // }
+            container.innerHTML = '';
+
+            const symbols = Object.entries(users);
+            for (const [key, symbol] of symbols) {
+                const p = document.createElement('p');
+                p.textContent = `Player ${key} : ${symbol}`;
+                container.appendChild(p);
+            }
+        });
+
+        socket.on('per-round-result', (data) => {
+            const { result, scores } = data;
+
+            const p = document.createElement('p');
+            p.textContent = `${result} & Scores => P1: ${scores.player1}, P2: ${scores.player2}`;
+            container.appendChild(p);
+            // button.disabled = false;
+            // socket.emit('button-enabled');
+        });
+
+        socket.on('game-error', (message) => {
+            alert(message);
+        })
+
+        socket.on('gameOver', (data) => {
+            const p = document.createElement('h2');
+            p.textContent = `🎉 ${data.winner} wins the game!`;
+            container.appendChild(p);
+        });
+
+    </script>
+</body>
+
+</html>
