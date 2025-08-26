@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat-App</title>
+
+    <style>
+        #userList li {
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        #userList li.selected {
+            background-color: #010203;
+            color: white;
+        }
+
+        #groupList li {
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        #groupList li.selected {
+            background-color: #010203;
+            color: white;
+        }
+    </style>
+
+</head>
+
+<body>
+    <h1>Chat App</h1>
+    <!-- <div>
+        <label>Username: </label>
+        <input id="username" type="text">
+        <button id="joinBtn">Join</button>
+    </div>
+
+    <h3>Online Users</h3>
+    <ul id="userList"></ul>
+
+    <h3>Messages</h3>
+    <div id="messages" style="border:1px solid #ccc; height:200px; overflow-y:scroll;"></div>
+
+    <input id="message" type="text" placeholder="Type a message">
+    <button id="sendBtn">Send</button>
+    <button id="cancelPrivateBtn" style="display:none;">Cancel Private Chat</button> -->
+
+    <div>
+        <input type="text" name="message" id="message" placeholder="Type message">
+        <button id="btn">Send Message</button>
+        <!-- <div id="messages"></div> -->
+    </div>
+
+    <h3>Users</h3>
+    <ul id="userList"></ul>
+
+    <!-- <h3>Messages</h3> -->
+    <div id="messages"></div>
+
+    <h3>Join Group</h3>
+    <input type="text" id="groupName" placeholder="Enter group name">
+    <button id="joinGroupBtn">Create Group</button>
+
+    <h3>Groups</h3>
+    <ul id="groupList"></ul>
+
+    <div id="groupMessages"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const sendButton = document.getElementById('btn');
+        const inputField = document.getElementById('message');
+        const messages = document.getElementById('messages');
+        const listOfUsers = document.getElementById('userList');
+
+        const groupMessages = document.getElementById('groupMessages');
+        const groupInput = document.getElementById('groupName');
+        const joinGroupBtn = document.getElementById('joinGroupBtn');
+        const groupList = document.getElementById('groupList');
+
+        let selectedGroup;
+        let selectedUser;
+
+        const person = prompt("Enter your name");
+        socket.emit('new-user', person);
+        // messages.textContent = `${person} joined the chat`;
+        // setTimeout(() => {
+        //     messages.textContent = '';
+        // }, 2000); 
+
+        // Display list of online users
+        socket.on("users-list", (users) => {
+            // console.log("Inside");
+
+            userList.innerHTML = "";
+            users.forEach(user => {
+                if (user !== person) {
+                    const li = document.createElement("li");
+                    li.textContent = user;
+                    li.style.cursor = "pointer";
+                    li.onclick = () => {
+                        document.querySelectorAll("#userList li").forEach(item => item.classList.remove("selected"));
+                        li.classList.add("selected");
+                        selectedGroup = null;
+                        selectedUser = user;
+                        document.querySelectorAll("#groupList li").forEach(item => item.classList.remove("selected"));
+                    };
+                    userList.appendChild(li);
+                }
+            });
+        });
+
+        socket.on('user-joined', (name) => {
+            const item = document.createElement('p');
+            item.textContent = `${name} joined the chat`;;
+            messages.appendChild(item);
+        })
+
+        sendButton.addEventListener('click', () => {
+            // console.log(message);
+            // if (inputField.value) {
+            //     socket.emit('chat-message', inputField.value);
+            //     inputField.value = '';
+            // }
+            // sendMessage.textContent = message;
+            // socket.emit('chat-message', message);
+            if (!inputField.value) return;
+            if (selectedUser) {
+                socket.emit('private-message', { to: selectedUser, message: inputField.value });
+                // const p = document.createElement('p');
+                // p.style.color = 'green';
+                // p.textContent = `(To ${selectedUser}): ${inputField.value}`;
+                // messages.appendChild(p);
+                const span = document.createElement('span');
+                span.style.backgroundColor = 'green';
+                span.style.padding = '10px 10px';
+                span.style.display = 'block';
+                span.style.margin = '4px 4px';
+                span.textContent = `(To ${selectedUser}): ${inputField.value}`;
+                messages.appendChild(span);
+            } else if (selectedGroup) {
+                socket.emit('group-message', { group: selectedGroup, message: inputField.value });
+                // const span = document.createElement('span');
+                // span.style.backgroundColor = 'blue';
+                // span.style.padding = '10px 10px';
+                // span.style.display = 'block';
+                // span.style.margin = '4px 4px';
+                // span.textContent = `[Group ${selectedGroup}] : ${inputField.value}`;
+                // messages.appendChild(span);
+            }
+            inputField.value = '';
+        });
+
+        // socket.on('chat-message', (message) => {
+        //     const item = document.createElement('p');
+        //     item.textContent = message;
+        //     messages.appendChild(item);
+        // });
+
+        socket.on('private-message', ({ from, message }) => {
+            // console.log("Hiiiiiiiiiiiiiiiiiiii");
+            // const p = document.createElement("p");
+            // p.style.color = "red";
+            // p.textContent = `(Private) ${from}: ${message}`;
+            // messages.appendChild(p);
+            const span = document.createElement('span');
+            span.style.backgroundColor = 'red';
+            span.style.padding = '10px 10px';
+            span.style.display = 'block';
+            span.style.margin = '4px 4px';
+            span.textContent = `(Private) ${from}: ${message}`;
+            messages.appendChild(span);
+        });
+
+        joinGroupBtn.addEventListener('click', () => {
+            const gName = groupInput.value;
+            if (gName) {
+                socket.emit('join-group', gName);
+                // selectedGroup = gName;
+                groupInput.value = '';
+            }
+        });
+
+        socket.on('groups-list', (groups) => {
+            groupList.innerHTML = '';
+            groups.forEach(group => {
+                const li = document.createElement('li');
+                li.textContent = group;
+                li.style.cursor = "pointer";
+                if (selectedGroup === group) {
+                    li.classList.add("selected");
+                }
+                li.onclick = () => {
+                    document.querySelectorAll("#groupList li").forEach(item => item.classList.remove("selected"));
+                    li.classList.add("selected");
+                    selectedUser = null;
+                    selectedGroup = group;
+                    document.querySelectorAll("#userList li").forEach(item => item.classList.remove("selected"));
+                    groupMessages.innerHTML = '';
+                    socket.emit('join-group', group);
+                };
+                groupList.appendChild(li);
+            });
+        });
+
+        socket.on('group-message', ({ from, group, message }) => {
+            const span = document.createElement('span');
+            span.style.backgroundColor = 'blue';
+            span.style.padding = '10px 10px';
+            span.style.display = 'block';
+            span.style.margin = '4px 4px';
+            span.textContent = `[Group ${group}] ${from}: ${message}`;
+            groupMessages.appendChild(span);
+        });
+
+    </script>
+</body>
+
+</html>
